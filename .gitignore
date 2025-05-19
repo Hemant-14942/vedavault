@@ -1,0 +1,67 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environment
+venv/
+env/
+ENV/
+*.env
+
+# FastAPI & Uvicorn logs
+*.log
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Uploaded files & generated insights
+uploads/
+static/charts/
+reports/
+*.pdf
+*.csv
+*.xlsx
+*.txt
+
+# Output folders for models/results
+models/
+outputs/
+results/
+
+# VSCode settings
+.vscode/
+
+# macOS & system files
+.DS_Store
+Thumbs.db
+
+# Python environment files
+poetry.lock
+Pipfile.lock
+
+# Compiled models or C extensions
+*.pyd
+*.pyo
+*.pdb
+
+# Pytest cache
+.pytest_cache/
+
+# MongoDB or other DB files (if exported locally)
+*.bson
+*.sql
+*.db
+*.sqlite3
+
+# Environment variable file
+.env
+.env.*
+
+# Cache or temp files
+*.tmp
+*.temp
+.cache/
+# Ignore system files
+.DS_Store
+Thumbs.db
