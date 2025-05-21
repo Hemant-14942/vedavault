@@ -9,11 +9,13 @@ MONGO_URI = os.getenv("MONGO_URI")
 DATABASE_NAME = os.getenv("DATABASE_NAME")
 
 client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_URI)
-database = client[DATABASE_NAME]
+db = client[DATABASE_NAME]
 
 # Collections
-student_collection = database["students"]
-user_collection = database["users"]  # just as example
+
+users_collection = db["users"]
+ml_collection = db["ml_records"]
+sessions_collection = db["sessions"]  # Assuming you have a sessions collection
 
 async def test_connection():
     try:
@@ -21,6 +23,11 @@ async def test_connection():
         print("✅ MongoDB connected:", info["version"])
     except Exception as e:
         print("❌ MongoDB connection failed:", e)
+# If session_id is UUID string instead of ObjectId
+async def get_session_by_id(session_id: str):
+    session = await sessions_collection.find_one({"_id": session_id})
+    return session
+
 
 if __name__ == "__main__":
     import asyncio
