@@ -1,13 +1,20 @@
 import os
 import pandas as pd
+from werkzeug.utils import secure_filename
 from fastapi import UploadFile, Request, HTTPException
 from fastapi.templating import Jinja2Templates
+from typing import Dict, Any
+from datetime import datetime
+from uuid import uuid4
+
+
 from app.modules.eda_pipeline import auto_eda_pipeline
 from app.modules.model_pipeline import train_best_model
 from app.services.ocr_services import extract_text_from_pdf  # make sure this exists
 from app.services.ocr_services import generate_insight_with_llm       # make sure this exists
 from app.modules.insight_refiner import clean_and_structure, generate_questions
-from werkzeug.utils import secure_filename
+from app.config.db import sessions_collection,ml_collection
+
 # from starlette.responses import FileResponse
 import traceback
 
@@ -17,18 +24,23 @@ OUTPUT_FOLDER = "outputs"
 templates = Jinja2Templates(directory="app/templates")
 
 
-async def upload_dataset(request: Request, file: UploadFile, task_type: str, target_col: str, pdf_file: UploadFile = None):
+async def upload_dataset(request: Request, file: UploadFile, task_type: str, target_col: str, pdf_file: UploadFile = None, current_user: Dict[str, Any] = None):
     try:
+        print("🔄 Received request to /upload")
         # Validate task type
         if not (file and task_type and target_col):
             return "❌ Missing required fields."
+        user_id = current_user["_id"]
+        timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        upload_id = f"{user_id}_{timestamp}"
         # Save the uploaded CSV
         os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-        filepath = os.path.join(UPLOAD_FOLDER, file.filename)
-        with open(filepath, "wb") as f:
+        csv_filename = f"{upload_id}_{file.filename}"
+        csv_filepath = os.path.join(UPLOAD_FOLDER, csv_filename)
+        with open(csv_filepath, "wb") as f:
             f.write(await file.read())
 
-        df = pd.read_csv(filepath, encoding='utf-8', engine='python')
+        df = pd.read_csv(csv_filepath, encoding='utf-8', engine='python')
         df.columns = df.columns.str.strip()
         target_col = target_col.strip()
 
@@ -43,7 +55,8 @@ async def upload_dataset(request: Request, file: UploadFile, task_type: str, tar
 
         clean_df, eda_summary = auto_eda_pipeline(df, task_type=task_type, target_col=target_col)
         os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-        clean_path = os.path.join(OUTPUT_FOLDER, "cleaned_data.csv")
+        cleaned_filename = f"{upload_id}_cleaned.csv"
+        clean_path = os.path.join(OUTPUT_FOLDER, cleaned_filename)
         clean_df.to_csv(clean_path, index=False)
 
         print("🔍 EDA Summary:\n", eda_summary)
@@ -51,7 +64,7 @@ async def upload_dataset(request: Request, file: UploadFile, task_type: str, tar
         best_model, report = train_best_model(clean_df, task_type=task_type)
 
         # Extract insight from EDA report
-        eda_pdf_path = "outputs/eda_report.pdf"
+        eda_pdf_path = os.path.join(OUTPUT_FOLDER, f"{upload_id}_eda_report.pdf")
         if os.path.exists(eda_pdf_path):
             eda_chart_text = extract_text_from_pdf(eda_pdf_path)
             print("🔍 EDA Chart Text krne bbad aa chuka hu")
@@ -65,9 +78,11 @@ async def upload_dataset(request: Request, file: UploadFile, task_type: str, tar
         # Optional PDF from user (Power BI report)
         if pdf_file and pdf_file.filename:
             print("🔍 Power BI file upload ho gaya")
-            pdf_path = os.path.join(UPLOAD_FOLDER, secure_filename(pdf_file.filename))
-            pdf_file.save(pdf_path)
-            powerbi_text = extract_text_from_pdf(pdf_path)
+            powerbi_filename = f"{upload_id}_powerbi_{pdf_file.filename}"
+            powerbi_path = os.path.join(UPLOAD_FOLDER, powerbi_filename)
+            with open(powerbi_path, "wb") as f:
+                f.write(await pdf_file.read())
+            powerbi_text = extract_text_from_pdf(powerbi_path)
             print("🔍 Power BI Chart Text nikla liya h")
             powerbi_insight = generate_insight_with_llm(powerbi_text, clean_df)
             print("🔍 Power BI Chart Insight nikla liya h")
@@ -77,17 +92,34 @@ async def upload_dataset(request: Request, file: UploadFile, task_type: str, tar
             print("🔍 Power BI Chart Insight k baad question genrate krke  report m daal diya:\n")
         else:
             print("⚠️ Power BI file upload nahi hui. Skipping PDF processing.")
+          # Save metadata in DB
+        ml_data = await ml_collection.insert_one({
+            "user_id": user_id,
+            "upload_id": upload_id,
+            "csv_path": csv_filepath,
+            "eda_pdf_path": eda_pdf_path,
+            "cleaned_path": clean_path,
+            "created_at": datetime.utcnow(),
+            "task_type": task_type,
+            "target_column": target_col,
+            "original_filename": file.filename
+        })
+        print("🔍 Metadata saved in DB with ID:", ml_data.inserted_id)
+        print("✅ Upload and analysis completed.")
 
-        # # Return JSON instead of HTML (for React)
-        # return {
-        #     "status": "success",
-        #     "message": "Upload and processing completed.",
-        #     "cleaned_data_path": clean_path,
-        #     "eda_report_path": eda_pdf_path,
-        #     "report": report
-        # }
-        print("🔍bss abb return krne ja raha best of luck ni bologe ky 😲" )
-        return templates.TemplateResponse("result.html", {"request": request, "report": report, "clean_path": clean_path})
+        # Return JSON instead of HTML (for React)
+        return {
+            "status": "success",
+            "message": "Upload and processing completed.",
+            "cleaned_data_path": os.path.basename(clean_path),
+            "eda_report_path": os.path.basename(eda_pdf_path),
+            "report": report
+        }
+        #  🚯 😦 frontend m esse use krna abb 
+        #  <a href={`/download/${cleaned_data_path}`} download>Download Cleaned CSV</a>
+        #  <a href={`/download_pdf/${eda_report_path}`} download>Download EDA PDF</a>
+        # print("🔍bss abb return krne ja raha best of luck ni bologe ky 😲" )
+        # return templates.TemplateResponse("result.html", {"request": request, "report": report, "clean_path": clean_path})
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"❌ Internal error: {str(e)}")
