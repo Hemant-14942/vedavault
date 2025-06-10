@@ -33,10 +33,11 @@ def process_uploaded_files(pdf_file, csv_file):
 def generate_response_from_question(question, context):
     return ask_groq_about_chart(question, context)
 
-def write_chat_to_file(chat):
-    file_path = os.path.join(OUTPUT_FOLDER, "chat_history.txt")
+def write_chat_to_file(chat, filename):
+    file_path = os.path.join(OUTPUT_FOLDER, filename)
     with open(file_path, "w", encoding="utf-8") as f:
         f.write("🧠 InsightForge.AI - Chat Q&A History\n\n")
-        for q, a in chat:
-            f.write(f"Q: {q}\nA: {a}\n\n")
+        for entry in chat:
+            f.write(f"Q: {entry['question']}\nA: {entry['answer']}\n\n")
     return file_path
+
