@@ -1,9 +1,11 @@
 # app/routers/auth.py
 
-from fastapi import APIRouter, Depends, Response, Request
+from fastapi import APIRouter, Depends, Response, Request, Form
 from typing import Dict, Any
+from pydantic import EmailStr
 
-from app.models.user import UserRegisterSchema, UserLoginSchema, TokenResponse, RegisterResponse
+
+from app.models.user import  TokenResponse, RegisterResponse
 from app.services.auth_services import register_user, login_user, logout_user
 from app.dependencies.auth import require_authentication
 
@@ -11,15 +13,27 @@ router = APIRouter()
 
 
 @router.post("/register", response_model=RegisterResponse)
-async def register(data: UserRegisterSchema, response: Response, request: Request):
+async def register(
+    response: Response,
+    request: Request,
+    name: str = Form(...),
+    email: EmailStr = Form(...),
+    password: str = Form(...),
+):
     """Register a new user"""
-    return await register_user(data.name, data.email, data.password, response, request)
+    return await register_user(name, email, password, response, request)
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(data: UserLoginSchema, response: Response, request: Request):
+async def login(
+    response: Response,
+    request: Request,
+    email: EmailStr = Form(...),
+    password: str = Form(...), 
+):
+
     """Login a user"""
-    return await login_user(data.email, data.password, response, request)
+    return await login_user(email, password, response, request)
 
 
 @router.post("/logout", response_model=Dict[str, str])
