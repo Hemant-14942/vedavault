@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, Response, Request
 from typing import Dict, Any
 
-from app.models.user import UserRegisterSchema, UserLoginSchema, TokenResponse, RegisterResponse
+from app.models.user import UserCreate,  UserLoginSchema, TokenResponse, RegisterResponse
 from app.services.auth_services import register_user, login_user, logout_user
 from app.dependencies.auth import require_authentication
 
@@ -11,7 +11,7 @@ router = APIRouter()
 
 
 @router.post("/register", response_model=RegisterResponse)
-async def register(data: UserRegisterSchema, response: Response, request: Request):
+async def register(data: UserCreate, response: Response, request: Request):
     """Register a new user"""
     return await register_user(data.name, data.email, data.password, response, request)
 
