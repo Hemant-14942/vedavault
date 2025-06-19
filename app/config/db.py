@@ -15,6 +15,9 @@ db = client[DATABASE_NAME]
 
 users_collection = db["users"]
 ml_collection = db["ml_records"]
+chart_insights_collection = db["chart_insights"]
+
+
 sessions_collection = db["sessions"]  # Assuming you have a sessions collection
 
 async def test_connection():
