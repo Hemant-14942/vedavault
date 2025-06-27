@@ -38,8 +38,8 @@
     <!-- Best Model -->
     <div class="card">
       <div class="card-body">
-        <h4>✅ Best Model: {{ report['Best Model'] }}</h4>
-        <p><strong>Score:</strong> {{ report['Best Score'] }}</p>
+        <h4>✅ Best Model: {{report['best_model']['name']} }</h4>
+        <p><strong>Score:</strong> {{report['best_model']['primary_score'] }}</p>
       </div>
     </div>
 
@@ -57,13 +57,13 @@
       <table class="table table-bordered table-striped">
         <thead class="table-dark">
           <tr>
-            {% for key in report['Comparison Table'][0].keys() %}
+            {% for key in report['comparison_table'][0].keys() %}
             <th>{{ key }}</th>
             {% endfor %}
           </tr>
         </thead>
         <tbody>
-          {% for row in report['Comparison Table'] %}
+          {% for row in report['comparison_table'] %}
           <tr>
             {% for val in row.values() %}
             <td>
@@ -81,7 +81,7 @@
     </div>
 
     <!-- SHAP Plot -->
-    {% if report.get("SHAP Summary Plot") %}
+    {% if report['feature_importance']['shap_summary_plot'] %}
     <h4 class="mt-4">🔍 SHAP Feature Importance</h4>
     <img src="/{{ report['SHAP Summary Plot'] }}" class="img-fluid mb-4">
     {% endif %}

@@ -4,12 +4,7 @@ from fastapi import APIRouter, Depends, Response, Request, Form
 from typing import Dict, Any
 from pydantic import EmailStr
 
-<<<<<<< HEAD
-from app.models.user import UserCreate,  UserLoginSchema, TokenResponse, RegisterResponse
-=======
-
-from app.models.user import  TokenResponse, RegisterResponse
->>>>>>> db93249e51759c9267bf7e3fb16a6ea483b770b8
+from app.models.user import UserCreate, UserLoginSchema, TokenResponse, RegisterResponse
 from app.services.auth_services import register_user, login_user, logout_user
 from app.dependencies.auth import require_authentication
 
@@ -17,9 +12,6 @@ router = APIRouter()
 
 
 @router.post("/register", response_model=RegisterResponse)
-<<<<<<< HEAD
-async def register(data: UserCreate, response: Response, request: Request):
-=======
 async def register(
     response: Response,
     request: Request,
@@ -27,7 +19,6 @@ async def register(
     email: EmailStr = Form(...),
     password: str = Form(...),
 ):
->>>>>>> db93249e51759c9267bf7e3fb16a6ea483b770b8
     """Register a new user"""
     return await register_user(name, email, password, response, request)
 
@@ -37,9 +28,8 @@ async def login(
     response: Response,
     request: Request,
     email: EmailStr = Form(...),
-    password: str = Form(...), 
+    password: str = Form(...),
 ):
-
     """Login a user"""
     return await login_user(email, password, response, request)
 
@@ -47,14 +37,16 @@ async def login(
 @router.post("/logout", response_model=Dict[str, str])
 async def logout(
     response: Response,
-    current_user: Dict[str, Any] = Depends(require_authentication)
+    current_user: Dict[str, Any] = Depends(require_authentication),
 ):
     """Logout a user"""
     return await logout_user(current_user["session_id"], response)
 
 
 @router.get("/me", response_model=Dict[str, Any])
-async def get_current_user(current_user: Dict[str, Any] = Depends(require_authentication)):
+async def get_current_user(
+    current_user: Dict[str, Any] = Depends(require_authentication),
+):
     """Get current authenticated user"""
-    print(f"user ki info lene ja rah hu hauahaha spy bn gya m to sala..... 😅 ")
+    print("Fetching current user info... 🕵️‍♂️")
     return current_user

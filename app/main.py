@@ -2,8 +2,9 @@ from fastapi import FastAPI, File, UploadFile, Form, HTTPException,APIRouter
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
-import os
 
+import os
+import logging
 # for adding templates html files
 from starlette.responses import FileResponse
 from starlette.middleware.sessions import SessionMiddleware
@@ -17,6 +18,12 @@ from app.utils.cleanup import register_cleanup_task
 
 app = FastAPI()
 router = APIRouter()
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 app.add_middleware(SessionMiddleware, secret_key="hemant123")
 
 # Configure CORS
